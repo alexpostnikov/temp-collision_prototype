@@ -11,13 +11,13 @@ def generate_line_from_sensor(sensor):
     p = [distance * math.cos(angle), distance *  math.sin(angle)]
     # !!!!!!!!!!! p[1] == 0
     if p[1] == 0:
-        return Line(-2, 2, 3, 3)
+        return Line(distance*math.cos(angle), distance*math.cos(angle),-20 , 20)
     k = -p[0]/p[1]
     b = p[1] - p[0] * k 
     y = []
-    y.append(k*(-2) + b)
-    y.append(k*(2) + b)
-    l = Line(-2, 2, y[0], y[1])
+    y.append(k*(-20) + b)
+    y.append(k*(20) + b)
+    l = Line(-20, 20, y[0], y[1])
     return l
 
 
@@ -26,7 +26,7 @@ def distance(a,b):
     return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
 
 def is_between(a,b,c):
-    return abs(distance(a,c) + distance(c,b) - distance(a,b)) < 0.01
+    return abs(distance(a,c) + distance(c,b) - distance(a,b)) < 0.0001
 
 def perp(a):
     b = np.empty_like(a)
@@ -186,6 +186,8 @@ def is_in_same_side_as_center(l1,p_int, center):
     y1 = l1["y"][0]
     x2 = l1["x"][1]
     y2 = l1["y"][1]
+    if abs(x1 - x2) < 0.00001:
+        return ((p_int[0]-x1) * (center[0]-x1) > 0)
     k = (y1 - y2)/(x1 - x2)
     b0 = y1 - k*x1
     p_int_side = p_int[1] - p_int[0]*k - b0
@@ -193,40 +195,41 @@ def is_in_same_side_as_center(l1,p_int, center):
     return p_int_side * center_side > 0
 
 
-def line_circle_clothest_point(p1, p2, r, center=(0, 0)):
-    Q = np.array([center[0], center[1]])        # Centre of circle
-    point1 = np.array([p1[0], p1[1]])
-    point2 = np.array([p2[0], p2[1]])
-    r = r                  # Radius of circle
-    P1 = point1      # Start of line segment
-    V = point2 - P1  # Vector along line segment
+# def line_circle_clothest_point(p1, p2, r, center=(0, 0)):
+#     Q = np.array([center[0], center[1]])        # Centre of circle
+#     point1 = np.array([p1[0], p1[1]])
+#     point2 = np.array([p2[0], p2[1]])
+#     r = r                  # Radius of circle
+#     P1 = point1      # Start of line segment
+#     V = point2 - P1  # Vector along line segment
 
-    a = V.dot(V)
-    b = 2 * V.dot(P1 - Q)
-    c = P1.dot(P1) + Q.dot(Q) - 2 * P1.dot(Q) - r**2
+#     a = V.dot(V)
+#     b = 2 * V.dot(P1 - Q)
+#     c = P1.dot(P1) + Q.dot(Q) - 2 * P1.dot(Q) - r**2
 
-    disc = b**2 - 4 * a * c
-    if disc < 0:
-        return [False, None]
+#     disc = b**2 - 4 * a * c
+#     if disc < 0:
+#         return [False, None]
 
-    sqrt_disc = math.sqrt(disc)
-    t1 = (-b + sqrt_disc) / (2 * a)
-    t2 = (-b - sqrt_disc) / (2 * a)
+#     sqrt_disc = math.sqrt(disc)
+#     t1 = (-b + sqrt_disc) / (2 * a)
+#     t2 = (-b - sqrt_disc) / (2 * a)
 
-    # if not (0 <= t1 <= 1 or 0 <= t2 <= 1):
-    #     print ("this sheet")
-    #     return [False, None]
+#     # if not (0 <= t1 <= 1 or 0 <= t2 <= 1):
+#     #     print ("this sheet")
+#     #     return [False, None]
 
-    t = max(0, min(1, - b / (2 * a)))
-    return [True, P1 + t * V]
+#     t = max(0, min(1, - b / (2 * a)))
+#     return [True, P1 + t * V]
 
 
 def modify_lines(l1,l2,p_intersection, center = (0,0)):
     # print (l1,l2)
     p1 = (l1["x"][0], l1["y"][0])
     p2 = (l1["x"][1], l1["y"][1])
+    dif_coef = 10.
+    directon_p1_p2 = ((p2[0] - p1[0])/dif_coef, (p2[1] - p1[1])/dif_coef)
     
-    directon_p1_p2 = ((p2[0] - p1[0])/100., (p2[1] - p1[1])/100.)
     p_int_moved = (p_intersection[0] + directon_p1_p2[0], p_intersection[1] + directon_p1_p2[1])
     same_side_as_center = is_in_same_side_as_center(l2,p_int_moved, center)
     if same_side_as_center:
@@ -235,46 +238,45 @@ def modify_lines(l1,l2,p_intersection, center = (0,0)):
     else:
         l1 = Line(p1[0], p_intersection[0], p1[1], p_intersection[1])
 
-
     p1 = (l2["x"][0], l2["y"][0])
     p2 = (l2["x"][1], l2["y"][1])
     
-    directon_p1_p2 = ((p2[0] - p1[0])/100., (p2[1] - p1[1])/100.)
+    directon_p1_p2 = ((p2[0] - p1[0])/dif_coef, (p2[1] - p1[1])/dif_coef)
     p_int_moved = (p_intersection[0] + directon_p1_p2[0], p_intersection[1] + directon_p1_p2[1])
     same_side_as_center = is_in_same_side_as_center(l1,p_int_moved, center)
-    if same_side_as_center:
+    if  same_side_as_center:
         l2 = Line(p_intersection[0], p2[0], p_intersection[1], p2[1])
     else:
         l2 = Line(p1[0], p_intersection[0], p1[1], p_intersection[1])
-        
+
     return (l1,l2)
 
-def check_lines_no_intersection(l1,l2, center = (0,0)):
-    p1_1 = (l2["x"][0], l2["y"][0])
-    p1_2 = (l2["x"][1], l2["y"][1])
-    p2_1 = (l1["x"][0], l1["y"][0])
-    p2_2 = (l1["x"][1], l1["y"][1])
-    same_side_as_center_p1 = is_in_same_side_as_center(l1, p1_1, center)
-    same_side_as_center_p2 = is_in_same_side_as_center(l2, p2_1, center)
-    if same_side_as_center_p1 and same_side_as_center_p2:
-        return (False, [])
-    else:
-        l1_circle_distance = line_circle_clothest_point(p1_1, p1_2, 1)
-        if l1_circle_distance[0] == True:
-            l1_circle_distance[1] = np.linalg.norm(l1_circle_distance[1])
-        else: 
-            print ("AHTUNG")
-            return (False, [])
-        l2_circle_distance = line_circle_clothest_point(p2_1, p2_2, 1)
-        if l2_circle_distance[0] == True:
-            l2_circle_distance[1] = np.linalg.norm(l2_circle_distance[1])
-        else: 
-            print ("AHTUNG")
-            return (False , [])
-        if l1_circle_distance < l2_circle_distance:
-            return (True, l1)
-        else:
-            return (True, l2)
+# def check_lines_no_intersection(l1,l2, center = (0,0)):
+#     p1_1 = (l2["x"][0], l2["y"][0])
+#     p1_2 = (l2["x"][1], l2["y"][1])
+#     p2_1 = (l1["x"][0], l1["y"][0])
+#     p2_2 = (l1["x"][1], l1["y"][1])
+#     same_side_as_center_p1 = is_in_same_side_as_center(l1, p1_1, center)
+#     same_side_as_center_p2 = is_in_same_side_as_center(l2, p2_1, center)
+#     if same_side_as_center_p1 and same_side_as_center_p2:
+#         return (False, [])
+#     else:
+#         l1_circle_distance = line_circle_clothest_point(p1_1, p1_2, 1)
+#         if l1_circle_distance[0] == True:
+#             l1_circle_distance[1] = np.linalg.norm(l1_circle_distance[1])
+#         else: 
+#             print ("AHTUNG")
+#             return (False, [])
+#         l2_circle_distance = line_circle_clothest_point(p2_1, p2_2, 1)
+#         if l2_circle_distance[0] == True:
+#             l2_circle_distance[1] = np.linalg.norm(l2_circle_distance[1])
+#         else: 
+#             print ("AHTUNG")
+#             return (False , [])
+#         if l1_circle_distance < l2_circle_distance:
+#             return (True, l1)
+#         else:
+#             return (True, l2)
 
 
 
@@ -284,8 +286,6 @@ def ClosestPointOnLine(a, b, p):
     result = a + ap.dot(ab)/ab.dot(ab) * ab
     return result
 
-def distance(a,b):
-    return math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
 
 def is_point_inside_line(a,b,p):
     if distance (a,p)+ distance(p,b) -  distance(a,b) < 0.0000001:
@@ -307,23 +307,26 @@ if __name__ == "__main__":
     # orig_lines = [Line(-1,1.01,-1.,1.0), Line(-1,0.999,-1.,1.01), Line(-1,1,0.65,-0.2), Line(-1,1,0.65,0.65), Line(-0.5,-0.6,-1, 1),  Line(0.2,1,1.2,-0.2), Line(-1.2,1.2, 0.2, 0.2), Line(-0.8,1,-0.8,0.5), Line(1.1, -0.7, 1.04, -1.17), Line(-1.1, 0.7, -1.04, 1.17)]
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    p = (0,0,1)
+
     plt.ion()
-    d = 0.01
-    sensors = { 
-                "4":[math.pi/180.0*30.,    2], 
-                "5":[math.pi/180.0*90.,    2], 
-                "6":[math.pi/180.0*150,    2], 
-                "7":[math.pi/180.0*210,    d], 
-                "8":[math.pi/180.0*270,    d], 
-                "9":[math.pi/180.0*-30,    d]}
+    d = 2
+    sensors = { "0" : [0,                     5],
+                "1" : [math.pi/180.0* 90,     4],
+                "2" : [math.pi/180.0* 180,    4],
+                "3" : [math.pi/180.0* 270,    4],
+
+                "4":[math.pi/180.0* 30.,    0.6], 
+                "5":[math.pi/180.0* 90.,    d], 
+                "6":[math.pi/180.0* 150,    d], 
+                "7":[math.pi/180.0* 210,    d], 
+                "8":[math.pi/180.0* 270,    d], 
+                "9":[math.pi/180.0* -30,    d]}
     
     orig_lines = []
-    for sensor in sensors:
-        
-        l = generate_line_from_sensor(sensors[sensor])
+    for sensor in range(10):
+        print (sensor)
+        l = generate_line_from_sensor(sensors[str(sensor)])
         orig_lines.append(l)
-        # plot_line(l, plt)
 
     for angle in np.arange(-2, 10*math.pi*2, 0.05):
         speed = np.array([math.cos(angle), math.sin(angle)])
@@ -333,36 +336,43 @@ if __name__ == "__main__":
             plot_line(line, ax, c="red", le =1)
 
         modif_lines = []
-        for line in orig_lines:
-            # intersect_with_c = LineIntersectCircle(p, [line["x"][0], line["y"][0]], [line["x"][1], line["y"][1]])
+        modif_lines.append(orig_lines[0])
+        modif_lines.append(orig_lines[1])
+        modif_lines.append(orig_lines[2])
+        modif_lines.append(orig_lines[3])
 
-            # if len(intersect_with_c) != 2:
-            #     continue
-            intersect_with_c= line
-            # intersect_with_c = Line(intersect_with_c[0][0],intersect_with_c[1][0], intersect_with_c[0][1], intersect_with_c[1][1])
+        for ind, intersect_with_c in enumerate(orig_lines):
+            
+            # intersect_with_c= line
             plot_line(intersect_with_c, plt, c="black", le =1)
-
+            if ind < 4:
+                # modif_lines.append(intersect_with_c)    # flag_inter = 1
+                continue
+            flag_inter = 0
             for i, line in enumerate(modif_lines):
+                
                 intersection = seg_intersect(modif_lines[i], intersect_with_c, inside=1)
-
-
                 if (intersection is not None):
+                    flag_inter += 1
                     modif_lines[i], intersect_with_c = modify_lines(modif_lines[i], intersect_with_c, intersection)
-                else:
-                    do_remove = check_lines_no_intersection(intersect_with_c, modif_lines[i])
-                    if do_remove[0] == True:
-                        if do_remove[1] == intersect_with_c:
-                            intersect_with_c = False
-                            break
-                        else:
-                            modif_lines.remove(modif_lines[i])
-            if intersect_with_c != False:
+                # else:
+                #     do_remove = check_lines_no_intersection(intersect_with_c, modif_lines[i])
+                #     if do_remove[0] == True:
+                #         if do_remove[1] == intersect_with_c:
+                #             intersect_with_c = False
+                #             break
+                #         else:
+                #             modif_lines.remove(modif_lines[i])
+            if flag_inter >= 1:
                 modif_lines.append(intersect_with_c)
+            else:
+                print ("flag_inter false")
 
         speed_line = Line(0,speed[0],0,speed[1])
 
         flag = True
         for line in modif_lines:
+
             is_interacted = seg_intersect(line, speed_line, inside= True)
             print ("is_interacted ",is_interacted, " angle= ", angle)
             if is_interacted is not None:
@@ -389,13 +399,13 @@ if __name__ == "__main__":
 
         circ = plt.Circle((0,0), 1, alpha=0.1)
         ax.add_patch(circ)
-        ax.set_xlim(-3., 3)
-        ax.set_ylim(-3., 3)
+        ax.set_xlim(-5., 5.)
+        ax.set_ylim(-5., 5.)
 
         plt.scatter(0, 0, color='darkgreen', marker='*')
         plt.axis('off')
-        plt.ylim(-3., 3)
-        plt.xlim(-3., 3)
+        plt.ylim(-5., 5.)
+        plt.xlim(-5., 5.)
         plt.draw()
 
         plt.show()
