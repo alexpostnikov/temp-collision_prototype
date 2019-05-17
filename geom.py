@@ -309,18 +309,18 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111)
 
     plt.ion()
-    d = 2
+    d = 0.5
     sensors = { "0" : [0,                     5],
                 "1" : [math.pi/180.0* 90,     4],
                 "2" : [math.pi/180.0* 180,    4],
                 "3" : [math.pi/180.0* 270,    4],
 
                 "4":[math.pi/180.0* 30.,    0.6], 
-                "5":[math.pi/180.0* 90.,    d], 
-                "6":[math.pi/180.0* 150,    d], 
+                "5":[math.pi/180.0* 90.,    0.3], 
+                "6":[math.pi/180.0* 150,    0.8], 
                 "7":[math.pi/180.0* 210,    d], 
                 "8":[math.pi/180.0* 270,    d], 
-                "9":[math.pi/180.0* -30,    d]}
+                "9":[math.pi/180.0* -30,    0.1]}
     
     orig_lines = []
     for sensor in range(10):
