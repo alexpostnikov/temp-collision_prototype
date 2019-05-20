@@ -1,48 +1,40 @@
+
 #include <stdio.h>
 #include <math.h>
-typedef struct Point
-{
-    double x;
-    double y;
-
-} Point;
-
-typedef struct Line
-{
-    Point p1;
-    Point p2;
-} Line;
-
+#include "geom.h"
 // const double PI = 3.14;
 
 #define PI 3.14159265359
-#define NUMB_SENSORS 9
+
 #define NO_INTERSECTION -999.0
-
+#define MAX_DISTANCE 0.6
+#define MIN_DISTANCE 0.1
+#define STOP_SPEED 0.01
 // Point SPEED_p = {0.4,-0.7};
+
+
+#define d 0.4
+double sensors[NUMB_SENSORS][2] = {
+    {PI / 180.0 * 30.0,  d},  //0
+    {PI / 180.0 * 90.0,  d},  //1
+    {PI / 180.0 * 90.0,  0},  //2
+    {PI / 180.0 * 150.0, d}, //3
+    {PI / 180.0 * 210.0, d}, //4
+    {PI / 180.0 * 210.0, d}, //5
+    {PI / 180.0 * 270.0, d}, //6
+    {PI / 180.0 * -32.0, d}, //7
+    {PI / 180.0 * -28.0, d}  //8
+};
+
+
 Line SPEED_l = {0, 0, 0.9, 0.9};
-
-// Line l = {};
-
 Line limit_square[4] = {
     {4, -4, 4, 4},
     {4, 4, -4, 4},
     {-4, 4, -4, -4},
     {-4, -4, 4, -4}};
 
-#define d 0.5
 
-double sensors[NUMB_SENSORS][2] = {
-    {PI / 180.0 * 30.0, d},  //0
-    {PI / 180.0 * 90.0, d},  //1
-    {PI / 180.0 * 90.0, d},  //2
-    {PI / 180.0 * 150.0, d+0.1}, //3
-    {PI / 180.0 * 210.0, d}, //4
-    {PI / 180.0 * 210.0, d}, //5
-    {PI / 180.0 * 270.0, d}, //6
-    {PI / 180.0 * -30.0, d}, //7
-    {PI / 180.0 * -30.0, d}  //8
-};
 
 Line generate_line_from_sensor(double angle, double distance)
 {
@@ -80,9 +72,20 @@ double distance(Point a, Point b)
     return sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2));
 }
 
+
+
+
+int is_point_inside_line(Point a, Point b, Point p)
+{
+    if (distance(a, p) + distance(p, b) - distance(a, b) < 0.0000001)
+        return 1;
+    else
+        return 0;
+}
+
 int is_between(Point a, Point b, Point c)
 {
-    return fabs(distance(a, c) + distance(c, b) - distance(a, b)) < 0.001;
+    return fabs(distance(a, c) + distance(c, b) - distance(a, b)) < 0.0000001;
 }
 
 double dot(Point v1, Point v2)
@@ -248,13 +251,6 @@ Point ClosestPointOnLine(Point a, Point b, Point p)
     return result;
 }
 
-int is_point_inside_line(Point a, Point b, Point p)
-{
-    if (distance(a, p) + distance(p, b) - distance(a, b) < 0.0000001)
-        return 1;
-    else
-        return 0;
-}
 
 Point pick_clothest_point_of_line_by_point(Point a, Point b, Point p)
 {
@@ -264,18 +260,20 @@ Point pick_clothest_point_of_line_by_point(Point a, Point b, Point p)
         return a;
 }
 
-int main()
-{
-    Point out_speed = {0, 0};
-    Point p1 = {0, 1}; // The variable p1 is declared like a normal variable
-    Point p2 = {1, 0};
-    Line l1 = {p1, p2};
-    double c = 0;
 
-    for (double angle = 0.0; angle < PI*2; angle += 0.1)
-    {
-        Line sp = {0, 0, cos(angle), sin(angle)};
-        SPEED_l = sp;
+Point process_collision_sensors(Line SPEED_l, double sensors[NUMB_SENSORS][2])
+{
+       Line limit_square[4] = {
+            {4, -4, 4, 4},
+            {4, 4, -4, 4},
+            {-4, 4, -4, -4},
+            {-4, -4, 4, -4}};
+        
+        // Line sp = {0, 0, cos(angle), sin(angle)};
+        // SPEED_l = sp;
+        // SPEED_l.p2.x = -0.112153;
+        // SPEED_l.p2.y = -0.993691;
+        Point out_speed = {SPEED_l.p2.x, SPEED_l.p2.y};
         printf("init  speed : %lf, %lf \n", SPEED_l.p2.x, SPEED_l.p2.y);
         Line limiting_lines[9];
 
@@ -298,8 +296,6 @@ int main()
                 }
             }
 
-            // ADD INTERSECTION WITH CUBE
-
             for (size_t j = 0; j < i; j++)
             {
                 Point intersection = seg_intersect(limiting_lines[j], limiting_lines[i], 1);
@@ -311,7 +307,7 @@ int main()
                 }
             }
         }
-
+        
         for (size_t i = 0; i < NUMB_SENSORS; i++)
         {
             Point is_interacted = seg_intersect(limiting_lines[i], SPEED_l, 1);
@@ -320,19 +316,78 @@ int main()
                 Point project_point = ClosestPointOnLine(limiting_lines[i].p1, limiting_lines[i].p2, SPEED_l.p2);
                 if (is_point_inside_line(limiting_lines[i].p1, limiting_lines[i].p2, project_point) == 1)
                 {
-                    out_speed = project_point;
-                    break;
+                    Point center = {0,0};
+                    if (distance (center, project_point) < distance (center, out_speed))
+                    {
+                        // printf("inside\n");
+                        out_speed = project_point;
+                    }
+                        
+                    // printf("intersected\n");
                 }
                 else
                 {
                     project_point = pick_clothest_point_of_line_by_point(limiting_lines[i].p1, limiting_lines[i].p2, project_point);
-                    out_speed = project_point;
-                    break;
+                    Point center = {0,0};
+                    if (distance (center, project_point) < distance (center, out_speed))
+                    {
+                        // printf("inside\n");
+                        out_speed = project_point;
+                    }
+                        
+                    // printf("intersected\n");
+                    // break;
                 }
             }
         }
+        if (sqrt( pow(out_speed.x, 2) + pow(out_speed.y, 2) ) < STOP_SPEED)
+        {
+            out_speed.x = 0.0;
+            out_speed.y = 0.0;
+        }
+        return out_speed;
+}
 
+
+void map_sensors(double sensors[NUMB_SENSORS][2], double max_dist, double min_dist, double mapped_sensors[NUMB_SENSORS][2])
+{
+    // double mapped_sensors[NUMB_SENSORS][2];
+    double slope = 1.0 / (max_dist - min_dist);
+    double b = 1 - (slope * max_dist);
+    for (int i =0; i < NUMB_SENSORS; i++)
+    {
+        mapped_sensors[i][0] = sensors[i][0];
+        if (sensors[i][1] <= min_dist+0.01)
+        {
+            mapped_sensors[i][1] = 0.002;
+        }
+        else 
+        {
+            mapped_sensors[i][1] = slope * sensors[i][1] + b;
+        }
+    }
+    // return mapped_sensors;
+}
+
+int main()
+{
+    Point p1 = {0, 1}; // The variable p1 is declared like a normal variable
+    Point p2 = {1, 0};
+    Line l1 = {p1, p2};
+    double c = 0;
+
+    for (double angle = 0.0; angle < PI*2; angle += 0.1)
+    {
+        Point out_speed;
+        Line sp = {0, 0, 0.3*cos(angle), 0.3*sin(angle)};
+        // Line sp = {0, 0, -0.666276, 0.745705};
+        // -0.666276, 0.745705
+        double mapped_sensors[NUMB_SENSORS][2];
+
+        map_sensors(sensors, MAX_DISTANCE, MIN_DISTANCE, mapped_sensors);
+        out_speed = process_collision_sensors(sp, mapped_sensors);
         printf("res speed   : %lf, %lf \n", out_speed.x, out_speed.y);
         printf(" \n");
+        continue;      
     }
 }

@@ -310,17 +310,17 @@ if __name__ == "__main__":
 
     plt.ion()
     d = 0.5
-    sensors = { "0" : [0,                     5],
+    sensors = { "0" : [0,                     4],
                 "1" : [math.pi/180.0* 90,     4],
                 "2" : [math.pi/180.0* 180,    4],
                 "3" : [math.pi/180.0* 270,    4],
 
-                "4":[math.pi/180.0* 30.,    0.6], 
-                "5":[math.pi/180.0* 90.,    0.3], 
-                "6":[math.pi/180.0* 150,    0.8], 
+                "4":[math.pi/180.0* 30.,    d], 
+                "5":[math.pi/180.0* 90.,    d], 
+                "6":[math.pi/180.0* 150,    d], 
                 "7":[math.pi/180.0* 210,    d], 
                 "8":[math.pi/180.0* 270,    d], 
-                "9":[math.pi/180.0* -30,    0.1]}
+                "9":[math.pi/180.0* -30,    d]}
     
     orig_lines = []
     for sensor in range(10):
@@ -328,8 +328,9 @@ if __name__ == "__main__":
         l = generate_line_from_sensor(sensors[str(sensor)])
         orig_lines.append(l)
 
-    for angle in np.arange(-2, 10*math.pi*2, 0.05):
+    for angle in np.arange(0, 10*math.pi*2, 0.05):
         speed = np.array([math.cos(angle), math.sin(angle)])
+        print ("init speed ", speed)
         plot_speed(plt, speed[0], speed[1])
         
         for line in orig_lines:
@@ -374,21 +375,24 @@ if __name__ == "__main__":
         for line in modif_lines:
 
             is_interacted = seg_intersect(line, speed_line, inside= True)
-            print ("is_interacted ",is_interacted, " angle= ", angle)
+            # print ("is_interacted ",is_interacted, " angle= ", angle)
             if is_interacted is not None:
                 project_point = ClosestPointOnLine(np.array([line["x"][0], line["y"][0]]), np.array([line["x"][1], line["y"][1]]), np.array([speed[0],speed[1]]))
                 if is_point_inside_line ( np.array([line["x"][0], line["y"][0]]), np.array([line["x"][1], line["y"][1]])  , project_point) == True:
                     plt.plot([0,project_point[0] ], [0, project_point[1]], color="red", linewidth="5")
-                    print ("prjection inside")
+                    print("out speed: ", project_point[0], project_point[1])
+                    
                     flag = False
                     break
                 else:
                     project_point = pick_clothest_point_of_line_by_point (np.array([line["x"][0], line["y"][0]]), np.array([line["x"][1], line["y"][1]])  , project_point)
-                    print ("prjection outside")
+                    
+                    print("out speed: ", project_point[0], project_point[1])
                     plt.plot([0,project_point[0] ], [0, project_point[1]], color="red", linewidth=5)
                     flag = False
                     break
         if flag:
+            print("out speed: ", speed[0], speed[1])
             plt.plot([0,speed[0]], [0, speed[1]], color="red", linewidth=5)
 
 
